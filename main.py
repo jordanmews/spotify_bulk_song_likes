@@ -1,5 +1,7 @@
 
 from os import environ
+from pprint import pprint
+
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
@@ -163,7 +165,7 @@ genres = [
 'world-music']
 
 def add_all_categories(genres=genres):
-    for cats in range(0, len(pp),5):
+    for cats in range(0, len(genres),5):
         print( genres[cats:cats+5])
         vv = genres[cats:cats+5]
         for i in range(0,10):
@@ -222,6 +224,42 @@ def get_saved_track_artists():
                 unique_artists.append(artist_id)
     return set(unique_artists)
 
+def like_all_tracks_by_artist_and_related(artist, like_related_dimension=0):
+    """
+    Like all tracks by an artist and optionally, related artists of expanding configurable dimensions.
+    :param artist: name of artist
+    :param like_related_dimension: 0 default. How many degrees of separation of related-artists to like.
+    """
+    related_artist_first_dimension = []
+    artist_ids_set = set()
+    artist_names_set = set()
+    if like_related_dimension > 0:
+        for x in range(0, like_related_dimension):
+            if x > 0:
+                for a in related_artist_first_dimension:
+                    b = get_artists_ids(a[0],True)
+                    just_artist_ids = [x[1] for x in b]
+                    artist_names_set = artist_names_set.union([x[0] for x in b])
+                    [artist_ids_set.add(x) for x in just_artist_ids]
+
+            else:
+                related_artist_first_dimension = get_artists_ids(artist,True)
+                just_artist_ids = [x[1] for x in related_artist_first_dimension]
+                artist_names_set  = artist_names_set.union([x[0] for x in related_artist_first_dimension])
+                artist_ids_set = set(just_artist_ids)
+    else:
+         [artist_ids_set.add(x[1]) for x in get_artists_ids(artist, False)]
+
+    pprint('Liking all tracks by:\n')
+    pprint(artist_names_set)
+
+    for a in artist_ids_set:
+        albums = get_all_artist_albums(a)
+        tracks = []
+        [tracks.extend(get_album_tracks(x)) for x in albums]
+        for x in range(0, len(tracks), 50):
+            like_tracks(tracks[x:x+49])
+
 
 # enum_playlists()
 # add_all_categories()
@@ -234,4 +272,7 @@ def get_saved_track_artists():
 
 # like_all_tracks_by_artist('iron & wine', True)
 # like_all_tracks_by_artist('red hot chili peppers', True)
+
+# Like all RHCP tracks and related, and all related to all the related
+# like_all_tracks_by_artist_and_related('red hot chili peppers', 2)
 # save_tracks_from_spotify_playlists()
